@@ -18,6 +18,9 @@ func Connect() {
         os.Getenv("DB_USER"),
         os.Getenv("DB_PASSWORD"),
         os.Getenv("DB_NAME"),
+        os.Getenv("DATABASE_URL"),
+        os.Getenv("JWT_SECRET")
+
     )
 
 

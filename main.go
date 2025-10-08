@@ -2,37 +2,33 @@ package main
 
 import (
     "log"
-    "net/http"
     "notes-app/config"
-    "notes-app/db"
-    "notes-app/handlers"
-    "notes-app/middleware"
-    "github.com/gorilla/mux"
+    "notes-app/routes"
+    "github.com/gofiber/fiber/v2"
     "github.com/joho/godotenv"
     "os"
 )
 
 func main() {
-    // Load .env (khusus lokal)
-    godotenv.Load()
+    // Load .env (opsional, khusus lokal)
+    if err := godotenv.Load(); err != nil {
+        log.Println("⚠️ .env tidak ditemukan, pastikan environment sudah di-set")
+    }
 
-    config.InitConfig()
-    db.Connect()
+    // Connect ke PostgreSQL
+    config.ConnectDB()
 
-    r := mux.NewRouter()
+    // Inisialisasi Fiber app
+    app := fiber.New()
 
-    // Auth routes
-    r.HandleFunc("/api/register", handlers.RegisterHandler).Methods("POST")
-    r.HandleFunc("/api/login", handlers.LoginHandler).Methods("POST")
+    // Setup routes modular
+    routes.SetupRoutes(app)
 
-    // Protected routes (pakai JWT)
-    notes := r.PathPrefix("/api/notes").Subrouter()
-    notes.Use(middleware.JWTMiddleware)
-    notes.HandleFunc("", handlers.CreateNoteHandler).Methods("POST")
-    notes.HandleFunc("", handlers.GetNotesHandler).Methods("GET")
-    notes.HandleFunc("/{id}", handlers.UpdateNoteHandler).Methods("PUT")
-    notes.HandleFunc("/{id}", handlers.DeleteNoteHandler).Methods("DELETE")
-
-    log.Println("🚀 Server berjalan di port:", os.Getenv("PORT"))
-    http.ListenAndServe(":"+os.Getenv("PORT"), r)
+    // Start server
+    port := os.Getenv("PORT")
+    if port == "" {
+        port = "8080"
+    }
+    log.Println("🚀 Server berjalan di port:", port)
+    log.Fatal(app.Listen(":" + port))
 }
